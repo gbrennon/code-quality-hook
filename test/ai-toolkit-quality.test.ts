@@ -2,9 +2,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import * as qualityHookEntrypoint from "../src/ai-toolkit-quality.ts";
 import {
   CircuitBreakerStore,
-  isSourceCodePath,
+  checkSourceCodePath,
   QualityHookService,
 } from "../src/ai-toolkit-quality.ts";
 
@@ -16,15 +17,19 @@ afterEach(async () => {
   );
 });
 
-describe("isSourceCodePath", () => {
+describe("checkSourceCodePath", () => {
   test("accepts supported source and Markdown extensions", () => {
-    expect(isSourceCodePath("src/main.py")).toBe(true);
-    expect(isSourceCodePath("docs/guide.MARKDOWN")).toBe(true);
+    expect(checkSourceCodePath("src/main.py")).toBe(true);
+    expect(checkSourceCodePath("docs/guide.MARKDOWN")).toBe(true);
   });
 
   test("rejects unsupported paths", () => {
-    expect(isSourceCodePath("image.png")).toBe(false);
-    expect(isSourceCodePath("Makefile")).toBe(false);
+    expect(checkSourceCodePath("image.png")).toBe(false);
+    expect(checkSourceCodePath("Makefile")).toBe(false);
+  });
+
+  test("re-exports the renamed predicate from the entrypoint", () => {
+    expect(qualityHookEntrypoint.checkSourceCodePath).toBe(checkSourceCodePath);
   });
 });
 
@@ -37,10 +42,10 @@ describe("CircuitBreakerStore", () => {
       threshold: 2,
     });
 
-    expect(store.isOpen("session", directory, "src/main.py")).toBe(false);
-    expect(store.recordFailure("session", directory, "src/main.py")).toBe(1);
-    expect(store.recordFailure("session", directory, "src/main.py")).toBe(2);
-    expect(store.isOpen("session", directory, "src/main.py")).toBe(true);
+    expect(store.checkCircuitBreakerIsOpen("session", directory, "src/main.py")).toBe(false);
+    expect(store.recordCircuitBreakerFailure("session", directory, "src/main.py")).toBe(1);
+    expect(store.recordCircuitBreakerFailure("session", directory, "src/main.py")).toBe(2);
+    expect(store.checkCircuitBreakerIsOpen("session", directory, "src/main.py")).toBe(true);
   });
 
   test("resets failures for a path", async () => {
@@ -51,10 +56,10 @@ describe("CircuitBreakerStore", () => {
       threshold: 1,
     });
 
-    store.recordFailure("session", directory, "src/main.py");
-    store.reset("session", directory, "src/main.py");
+    store.recordCircuitBreakerFailure("session", directory, "src/main.py");
+    store.resetCircuitBreakerFailures("session", directory, "src/main.py");
 
-    expect(store.isOpen("session", directory, "src/main.py")).toBe(false);
+    expect(store.checkCircuitBreakerIsOpen("session", directory, "src/main.py")).toBe(false);
   });
 });
 
@@ -78,7 +83,7 @@ describe("QualityHookService", () => {
       content: [{ type: "text", text: "write complete" }],
     };
 
-    const result = await service.handleToolResult(api, event, {
+    const result = await service.processToolResultEvent(api, event, {
       cwd: directory,
       sessionId: "session",
     });
