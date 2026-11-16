@@ -1,0 +1,14 @@
+rules:
+  - id: ai-toolkit-kotlin-no-runtime-command-execution
+    languages:
+      - kotlin
+    severity: ERROR
+    message: Avoid direct Runtime.exec or ProcessBuilder command execution
+    metadata:
+      category: security
+      technology: [kotlin]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: Runtime.getRuntime().exec(...)
+      - pattern: ProcessBuilder(...)
