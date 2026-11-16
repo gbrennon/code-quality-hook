@@ -1,13 +1,19 @@
+import { fileURLToPath } from "node:url";
 import { CircuitBreakerStore } from "./circuit-breaker-store.ts";
 import { checkSourceCodePath } from "./check-source-code-path.ts";
+import { resolveSemgrepConfig } from "./resolve-semgrep-config.ts";
 import type { QualityApi } from "./quality-api.ts";
 import type { ToolContext } from "./tool-context.ts";
 import type { ToolResultEvent } from "./tool-result-event.ts";
 
 const EDIT_TOOLS: Readonly<Record<string, true>> = { write: true, edit: true };
+const DEFAULT_SEMGREP_RULES_PATH = fileURLToPath(new URL("./semgrep-rules", import.meta.url));
 
 export class QualityHookService {
-  public constructor(private readonly breaker: CircuitBreakerStore = new CircuitBreakerStore()) {}
+  public constructor(
+    private readonly breaker: CircuitBreakerStore = new CircuitBreakerStore(),
+    private readonly semgrepRulesPath: string = DEFAULT_SEMGREP_RULES_PATH,
+  ) {}
 
   public async processToolResultEvent(
     api: QualityApi,
@@ -33,7 +39,22 @@ export class QualityHookService {
       );
     }
 
-    const result = await api.exec("check-code-quality", [path], { cwd: context.cwd });
+    const semgrepConfig = resolveSemgrepConfig(context.cwd, this.semgrepRulesPath);
+    const result = await api.exec(
+      "check-code-quality",
+      [
+        "-C",
+        "5",
+        "-L",
+        "50",
+        "-a",
+        "5",
+        "--semgrep-config",
+        semgrepConfig,
+        path,
+      ],
+      { cwd: context.cwd },
+    );
     if (result.code === 0) {
       this.breaker.resetCircuitBreakerFailures(session, context.cwd, path);
       return;

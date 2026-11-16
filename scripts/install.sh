@@ -16,8 +16,21 @@ install_hook_modules() {
   done
 }
 
+install_hook_rules() {
+  local destination_dir="$1"
+  local source_path
+  local relative_path
+
+  while IFS= read -r -d "" source_path; do
+    relative_path="${source_path#"$source_dir/"}"
+    install -D -m 0644 "$source_path" "$destination_dir/$relative_path"
+  done < <(find "$source_dir/semgrep-rules" -type f -print0)
+}
+
 install_hook_modules "$pi_dir"
+install_hook_rules "$pi_dir"
 install_hook_modules "$omp_dir"
+install_hook_rules "$omp_dir"
 
 printf 'Installed shared code-quality hook:\n'
 printf '  Pi:  %s\n' "$pi_dir/ai-toolkit-quality.ts"
