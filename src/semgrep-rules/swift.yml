@@ -1,0 +1,12 @@
+rules:
+  - id: ai-toolkit-swift-no-unsafe-bit-casts
+    languages:
+      - swift
+    severity: ERROR
+    message: Avoid unsafe bit casts at untrusted data boundaries
+    metadata:
+      category: security
+      technology: [swift]
+      confidence: HIGH
+      policy: default
+    pattern: unsafeBitCast(...)
