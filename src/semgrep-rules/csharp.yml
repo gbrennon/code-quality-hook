@@ -1,0 +1,12 @@
+rules:
+  - id: ai-toolkit-csharp-no-direct-process-start
+    languages:
+      - csharp
+    severity: ERROR
+    message: Avoid direct process execution without strict input validation
+    metadata:
+      category: security
+      technology: [csharp]
+      confidence: HIGH
+      policy: default
+    pattern: Process.Start(...)
