@@ -1,0 +1,27 @@
+rules:
+  - id: ai-toolkit-javascript-no-dynamic-code-execution
+    languages:
+      - javascript
+    severity: ERROR
+    message: Do not evaluate dynamically constructed JavaScript code
+    metadata:
+      category: security
+      technology: [javascript]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: Function(...)
+      - pattern: new Function(...)
+
+  - id: ai-toolkit-javascript-no-inner-html-assignment
+    languages:
+      - javascript
+    severity: ERROR
+    message: Avoid assigning untrusted content to innerHTML
+    metadata:
+      category: security
+      technology: [javascript]
+      confidence: HIGH
+      policy: default
+    pattern: $ELEMENT.innerHTML = $VALUE
