@@ -1,0 +1,12 @@
+rules:
+  - id: ai-toolkit-lua-no-shell-command-execution
+    languages:
+      - lua
+    severity: ERROR
+    message: Avoid shell command execution through os.execute
+    metadata:
+      category: security
+      technology: [lua]
+      confidence: HIGH
+      policy: default
+    pattern: os.execute(...)
