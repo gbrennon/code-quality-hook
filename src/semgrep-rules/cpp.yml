@@ -1,0 +1,13 @@
+rules:
+  - id: ai-toolkit-c-no-shell-command-execution
+    languages:
+      - c
+      - cpp
+    severity: ERROR
+    message: Avoid shell command execution through system
+    metadata:
+      category: security
+      technology: [c, cpp]
+      confidence: HIGH
+      policy: default
+    pattern: system(...)
