@@ -10,12 +10,52 @@ const SEMGREP_CONFIG_CANDIDATES = [
   "semgrep.yaml",
 ] as const;
 
-export function resolveSemgrepConfig(cwd: string, fallbackRulesPath: string): string {
+const BUNDLED_RULES_BY_EXTENSION: Readonly<Record<string, string>> = {
+  py: "python.yml",
+  pyw: "python.yml",
+  rs: "rust.yml",
+  scala: "scala.yml",
+  sc: "scala.yml",
+  go: "go.yml",
+  java: "java.yml",
+  kt: "kotlin.yml",
+  kts: "kotlin.yml",
+  hs: "haskell.yml",
+  lhs: "haskell.yml",
+  ts: "typescript.yml",
+  tsx: "typescript.yml",
+  js: "javascript.yml",
+  jsx: "javascript.yml",
+  mjs: "javascript.yml",
+  cjs: "javascript.yml",
+  swift: "swift.yml",
+  cs: "csharp.yml",
+  c: "cpp.yml",
+  h: "cpp.yml",
+  cc: "cpp.yml",
+  cpp: "cpp.yml",
+  hpp: "cpp.yml",
+  cxx: "cpp.yml",
+  rb: "ruby.yml",
+  php: "php.yml",
+  lua: "lua.yml",
+  sh: "bash.yml",
+};
+
+export function resolveSemgrepConfig(
+  cwd: string,
+  sourcePath: string,
+  fallbackRulesPath: string,
+): string {
   for (const candidate of SEMGREP_CONFIG_CANDIDATES) {
     const candidatePath = join(cwd, candidate);
     if (containsSemgrepRules(candidatePath)) return candidatePath;
   }
-  return fallbackRulesPath;
+
+  const extensionStart = sourcePath.lastIndexOf(".");
+  const extension = extensionStart >= 0 ? sourcePath.slice(extensionStart + 1).toLowerCase() : "";
+  const bundledRulesFile = BUNDLED_RULES_BY_EXTENSION[extension] || "default.yml";
+  return join(fallbackRulesPath, bundledRulesFile);
 }
 
 function containsSemgrepRules(path: string): boolean {
@@ -39,4 +79,3 @@ function directoryContainsSemgrepRules(path: string): boolean {
     containsSemgrepRules(join(path, entry.name)),
   );
 }
-
