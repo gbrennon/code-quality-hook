@@ -1,0 +1,14 @@
+rules:
+  - id: ai-toolkit-python-no-dynamic-code-execution
+    languages:
+      - python
+    severity: ERROR
+    message: Avoid eval and exec; dynamic code execution can enable code injection
+    metadata:
+      category: security
+      technology: [python]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)

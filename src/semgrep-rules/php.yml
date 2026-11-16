@@ -1,0 +1,14 @@
+rules:
+  - id: ai-toolkit-php-no-dynamic-code-execution
+    languages:
+      - php
+    severity: ERROR
+    message: Avoid dynamic PHP code execution
+    metadata:
+      category: security
+      technology: [php]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: shell_exec(...)

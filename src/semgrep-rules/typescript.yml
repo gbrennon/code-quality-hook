@@ -1,0 +1,27 @@
+rules:
+  - id: ai-toolkit-typescript-no-dynamic-code-execution
+    languages:
+      - typescript
+    severity: ERROR
+    message: Do not evaluate dynamically constructed TypeScript code
+    metadata:
+      category: security
+      technology: [typescript]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: Function(...)
+      - pattern: new Function(...)
+
+  - id: ai-toolkit-typescript-no-inner-html-assignment
+    languages:
+      - typescript
+    severity: ERROR
+    message: Avoid assigning untrusted content to innerHTML
+    metadata:
+      category: security
+      technology: [typescript]
+      confidence: HIGH
+      policy: default
+    pattern: $ELEMENT.innerHTML = $VALUE

@@ -55,7 +55,7 @@ afterEach(async () => {
           "-a",
           "5",
           "--semgrep-config",
-          fallbackRules,
+          join(fallbackRules, "python.yml"),
           "src/main.py",
         ],
         options: { cwd: directory },

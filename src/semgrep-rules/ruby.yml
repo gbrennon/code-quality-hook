@@ -1,0 +1,14 @@
+rules:
+  - id: ai-toolkit-ruby-no-dynamic-code-execution
+    languages:
+      - ruby
+    severity: ERROR
+    message: Avoid dynamic Ruby code execution
+    metadata:
+      category: security
+      technology: [ruby]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: instance_eval(...)

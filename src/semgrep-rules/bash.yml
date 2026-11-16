@@ -1,0 +1,12 @@
+rules:
+  - id: ai-toolkit-bash-no-dynamic-eval
+    languages:
+      - bash
+    severity: ERROR
+    message: Avoid dynamic shell evaluation through eval
+    metadata:
+      category: security
+      technology: [bash]
+      confidence: HIGH
+      policy: default
+    pattern-regex: "\\beval\\s+"

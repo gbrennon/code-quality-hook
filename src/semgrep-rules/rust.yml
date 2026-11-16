@@ -1,0 +1,16 @@
+rules:
+  - id: ai-toolkit-rust-no-shell-command-execution
+    languages:
+      - rust
+    severity: ERROR
+    message: Avoid passing command strings to shell interpreters
+    metadata:
+      category: security
+      technology: [rust]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: Command::new("sh").arg("-c")
+      - pattern: Command::new("bash").arg("-c")
+      - pattern: Command::new("cmd").arg("/c")
+      - pattern: Command::new("cmd.exe").arg("/c")

@@ -39,7 +39,7 @@ export class QualityHookService {
       );
     }
 
-    const semgrepConfig = resolveSemgrepConfig(context.cwd, this.semgrepRulesPath);
+    const semgrepConfig = resolveSemgrepConfig(context.cwd, path, this.semgrepRulesPath);
     const result = await api.exec(
       "check-code-quality",
       [

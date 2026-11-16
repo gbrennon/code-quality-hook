@@ -1,0 +1,12 @@
+rules:
+  - id: ai-toolkit-haskell-no-shell-command-execution
+    languages:
+      - generic
+    severity: ERROR
+    message: Avoid direct shell command execution without strict input validation
+    metadata:
+      category: security
+      technology: [haskell]
+      confidence: HIGH
+      policy: default
+    pattern-regex: "\\b(?:System\\.Process\\.)?system(?:\\s+|\\()"

@@ -1,0 +1,12 @@
+rules:
+  - id: ai-toolkit-scala-no-unsafe-deserialization
+    languages:
+      - scala
+    severity: ERROR
+    message: Avoid Java native deserialization for untrusted data
+    metadata:
+      category: security
+      technology: [scala]
+      confidence: HIGH
+      policy: default
+    pattern: $STREAM.readObject(...)

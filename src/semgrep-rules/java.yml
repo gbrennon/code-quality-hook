@@ -1,0 +1,14 @@
+rules:
+  - id: ai-toolkit-java-no-runtime-command-execution
+    languages:
+      - java
+    severity: ERROR
+    message: Avoid direct Runtime.exec or ProcessBuilder command execution
+    metadata:
+      category: security
+      technology: [java]
+      confidence: HIGH
+      policy: default
+    pattern-either:
+      - pattern: Runtime.getRuntime().exec(...)
+      - pattern: new ProcessBuilder(...)
