@@ -1,0 +1,19 @@
+rules:
+  - id: ai-toolkit-go-no-shell-command-execution
+    languages:
+      - go
+    severity: ERROR
+    message: Avoid invoking a shell with a command string
+    metadata:
+      category: security
+      technology: [go]
+      confidence: HIGH
+      policy: default
+    patterns:
+      - pattern: exec.Command($SHELL, $MODE, ...)
+      - metavariable-regex:
+          metavariable: $SHELL
+          regex: ^\"(?:sh|bash|cmd|cmd\\.exe)\"$
+      - metavariable-regex:
+          metavariable: $MODE
+          regex: ^\"(?:-c|/c)\"$
