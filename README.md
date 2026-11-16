@@ -28,4 +28,7 @@ Semgrep configuration is selected in this order:
 3. the bundled rules installed alongside the hook.
 
 Repository rules therefore take precedence, while repositories without Semgrep
-configuration still receive the hook's default security checks.
+configuration still receive language-specific hook defaults. Bundled rules are
+selected from the modified file extension for Python, Rust, Scala, Go, Java,
+Kotlin, Haskell, TypeScript, JavaScript, Swift, C/C++, C#, Ruby, PHP, Lua, and
+Bash; unsupported extensions use the default rules.
