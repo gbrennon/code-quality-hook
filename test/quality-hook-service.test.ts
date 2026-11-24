@@ -18,13 +18,13 @@ afterEach(async () => {
     temporaryDirectories.push(directory);
     const fallbackRules = join(directory, "hook-rules");
     const calls: Array<{ command: string; args: string[]; options: { cwd: string } }> = [];
-    const service = new QualityHookService(
-      new CircuitBreakerStore({
+    const service = new QualityHookService({
+      breaker: new CircuitBreakerStore({
         statePath: join(directory, "state.json"),
         threshold: 3,
       }),
-      fallbackRules,
-    );
+      semgrepRulesPath: fallbackRules,
+    });
     const api = {
       exec: async (command: string, args: string[], options: { cwd: string }) => {
         calls.push({ command, args, options });
@@ -63,6 +63,55 @@ afterEach(async () => {
     ]);
   });
 
+  test("passes configured quality limits to the checker", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "code-quality-hook-"));
+    temporaryDirectories.push(directory);
+    const fallbackRules = join(directory, "hook-rules");
+    const calls: string[][] = [];
+    const service = new QualityHookService({
+      breaker: new CircuitBreakerStore({ statePath: join(directory, "state.json") }),
+      semgrepRulesPath: fallbackRules,
+      settings: {
+        maxComplexity: 9,
+        maxFunctionLength: 77,
+        maxArguments: 2,
+        circuitBreakerThreshold: 4,
+        circuitBreakerStatePath: join(directory, "configured-state.json"),
+      },
+    });
+    const api = {
+      exec: async (_command: string, args: string[]) => {
+        calls.push(args);
+        return { code: 0, stdout: "", stderr: "" };
+      },
+    };
+
+    await service.processToolResultEvent(
+      api,
+      {
+        isError: false,
+        toolName: "write",
+        input: { path: "src/main.py" },
+        content: [],
+      },
+      { cwd: directory, sessionId: "session" },
+    );
+
+    expect(calls).toEqual([
+      [
+        "-C",
+        "9",
+        "-L",
+        "77",
+        "-a",
+        "2",
+        "--semgrep-config",
+        join(fallbackRules, "python.yml"),
+        "src/main.py",
+      ],
+    ]);
+  });
+
   test("passes repository .semgrep rules before fallback rules", async () => {
     const directory = await mkdtemp(join(tmpdir(), "code-quality-hook-"));
     temporaryDirectories.push(directory);
@@ -70,10 +119,10 @@ afterEach(async () => {
     await mkdir(repositoryRules);
     await writeFile(join(repositoryRules, "rules.yml"), "rules: []");
     const calls: string[][] = [];
-    const service = new QualityHookService(
-      new CircuitBreakerStore({ statePath: join(directory, "state.json") }),
-      join(directory, "hook-rules"),
-    );
+    const service = new QualityHookService({
+      breaker: new CircuitBreakerStore({ statePath: join(directory, "state.json") }),
+      semgrepRulesPath: join(directory, "hook-rules"),
+    });
     const api = {
       exec: async (_command: string, args: string[]) => {
         calls.push(args);
@@ -99,10 +148,10 @@ afterEach(async () => {
     await mkdir(repositoryRules);
     await writeFile(join(repositoryRules, "rules.yaml"), "rules: []");
     const calls: string[][] = [];
-    const service = new QualityHookService(
-      new CircuitBreakerStore({ statePath: join(directory, "state.json") }),
-      join(directory, "hook-rules"),
-    );
+    const service = new QualityHookService({
+      breaker: new CircuitBreakerStore({ statePath: join(directory, "state.json") }),
+      semgrepRulesPath: join(directory, "hook-rules"),
+    });
     const api = {
       exec: async (_command: string, args: string[]) => {
         calls.push(args);

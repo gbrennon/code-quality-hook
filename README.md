@@ -8,6 +8,9 @@ This project installs the shared code-quality hook for Pi and OMP.
 ./scripts/install.sh
 ```
 
+Installation requires Bun. Set `BUN_COMMAND` to the Bun executable when it is
+not available on the default `PATH`.
+
 The installer updates only the quality hook files. It does not install or modify
 notification hooks.
 
@@ -16,6 +19,46 @@ notification hooks.
 ```bash
 bun test
 ```
+
+
+## Settings
+
+The hook stores settings in
+`$XDG_CONFIG_HOME/ai-toolkit/code-quality-hook.json`, or
+`$HOME/.config/ai-toolkit/code-quality-hook.json` when `XDG_CONFIG_HOME` is
+unset.
+
+Available settings and defaults:
+
+- `max-complexity=5`
+- `max-function-length=50`
+- `max-arguments=5`
+- `circuit-breaker-threshold=3`
+- `circuit-breaker-state-path` unset, using existing environment/default resolution
+
+Use the shared command in Pi or OMP:
+
+```text
+/code-quality menu
+/code-quality show
+/code-quality set max-complexity 9
+/code-quality reset max-complexity
+/code-quality reset
+```
+
+In an interactive TUI, `/code-quality` or `/code-quality menu` opens a settings
+menu. Successful `show`, `set`, and `reset` commands display the resolved
+settings in the same read-only panel; it is display-only and not sent to the
+model. Editing a setting opens a prefilled editor with its current value.
+Without an interactive UI, the bare command shows the current settings. The
+`show`, `set`, and `reset` forms remain available for scripting and
+non-interactive sessions. While typing `/code-quality`, the TUI offers
+completions for `menu`, `show`, `set`, `reset`, and setting keys.
+
+Successful changes apply to the next write or edit event in the current session
+and persist for later sessions. Semgrep repository discovery is unchanged.
+`AI_TOOLKIT_CIRCUIT_BREAKER_THRESHOLD` and `AI_TOOLKIT_CIRCUIT_BREAKER_STATE`
+remain fallbacks when no persisted override exists.
 
 ## Quality checks
 
