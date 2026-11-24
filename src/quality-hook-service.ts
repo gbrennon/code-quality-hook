@@ -1,4 +1,6 @@
 import { fileURLToPath } from "node:url";
+import { DEFAULT_QUALITY_SETTINGS } from "./quality-settings.ts";
+import type { QualitySettings } from "./quality-settings.ts";
 import { CircuitBreakerStore } from "./circuit-breaker-store.ts";
 import { checkSourceCodePath } from "./check-source-code-path.ts";
 import { resolveSemgrepConfig } from "./resolve-semgrep-config.ts";
@@ -9,11 +11,30 @@ import type { ToolResultEvent } from "./tool-result-event.ts";
 const EDIT_TOOLS: Readonly<Record<string, true>> = { write: true, edit: true };
 const DEFAULT_SEMGREP_RULES_PATH = fileURLToPath(new URL("./semgrep-rules", import.meta.url));
 
+export interface QualityHookServiceOptions {
+  breaker?: CircuitBreakerStore;
+  semgrepRulesPath?: string;
+  settings?: QualitySettings;
+}
+
 export class QualityHookService {
-  public constructor(
-    private readonly breaker: CircuitBreakerStore = new CircuitBreakerStore(),
-    private readonly semgrepRulesPath: string = DEFAULT_SEMGREP_RULES_PATH,
-  ) {}
+  private breaker: CircuitBreakerStore;
+  private readonly semgrepRulesPath: string;
+  private settings: QualitySettings;
+
+  public constructor(options: QualityHookServiceOptions = {}) {
+    this.breaker = options.breaker ?? new CircuitBreakerStore();
+    this.semgrepRulesPath = options.semgrepRulesPath ?? DEFAULT_SEMGREP_RULES_PATH;
+    this.settings = options.settings ?? DEFAULT_QUALITY_SETTINGS;
+  }
+
+  public updateSettings(settings: QualitySettings): void {
+    this.settings = settings;
+    this.breaker = new CircuitBreakerStore({
+      threshold: settings.circuitBreakerThreshold,
+      statePath: settings.circuitBreakerStatePath,
+    });
+  }
 
   public async processToolResultEvent(
     api: QualityApi,
@@ -44,11 +65,11 @@ export class QualityHookService {
       "check-code-quality",
       [
         "-C",
-        "5",
+        String(this.settings.maxComplexity),
         "-L",
-        "50",
+        String(this.settings.maxFunctionLength),
         "-a",
-        "5",
+        String(this.settings.maxArguments),
         "--semgrep-config",
         semgrepConfig,
         path,
