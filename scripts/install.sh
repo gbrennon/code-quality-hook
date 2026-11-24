@@ -7,13 +7,18 @@ source_dir="$project_root/src"
 pi_dir="${HOME}/.pi/agent/extensions"
 omp_dir="${HOME}/.omp/agent/hooks/post"
 
-install_hook_modules() {
+install_bundled_hook() {
   local destination_dir="$1"
   local source_path
 
+  mkdir -p "$destination_dir"
   for source_path in "$source_dir"/*.ts; do
-    install -D -m 0644 "$source_path" "$destination_dir/$(basename "$source_path")"
+    rm -f "$destination_dir/$(basename "$source_path")"
   done
+  bun build "$source_dir/ai-toolkit-quality.ts" \
+    --target bun \
+    --format esm \
+    --outfile "$destination_dir/ai-toolkit-quality.ts" >/dev/null
 }
 
 install_hook_rules() {
@@ -27,9 +32,9 @@ install_hook_rules() {
   done < <(find "$source_dir/semgrep-rules" -type f -print0)
 }
 
-install_hook_modules "$pi_dir"
+install_bundled_hook "$pi_dir"
 install_hook_rules "$pi_dir"
-install_hook_modules "$omp_dir"
+install_bundled_hook "$omp_dir"
 install_hook_rules "$omp_dir"
 
 printf 'Installed shared code-quality hook:\n'
