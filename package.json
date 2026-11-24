@@ -8,6 +8,6 @@
     "test:unit": "bun test",
     "test:e2e": "bash scripts/run-e2e.sh",
     "test:all": "bun run test:unit && bun run test:e2e",
-    "hooks:install": "lefthook install"
+    "hooks:install": "lefthook install --force"
   }
 }
