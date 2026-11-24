@@ -1,0 +1,96 @@
+name: Create GitHub release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      ref_name:
+        description: Release tag to create
+        required: true
+        type: string
+      source_ref:
+        description: Git revision containing the release workflow and package
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out selected release
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_ref || inputs.ref_name || github.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate release and package version
+        id: validate
+        shell: bash
+        env:
+          REF_NAME: ${{ inputs.ref_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          version_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.(0|[1-9][0-9]*))?$'
+          if [[ ! "$REF_NAME" =~ $version_pattern ]]; then
+            printf 'Invalid release tag: %s\n' "$REF_NAME" >&2
+            exit 1
+          fi
+
+          expected_version="${REF_NAME#v}"
+          package_version="$(jq -er '.version' package.json)"
+          if [[ "$package_version" != "$expected_version" ]]; then
+            printf 'package.json version %s does not match release %s\n' \
+              "$package_version" "$expected_version" >&2
+            exit 1
+          fi
+
+          if [[ "$expected_version" == *-rc.* ]]; then
+            printf 'prerelease=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'prerelease=false\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package npm release
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          pack_json="$RUNNER_TEMP/npm-pack.json"
+          npm pack --json --pack-destination "$RUNNER_TEMP" > "$pack_json"
+          asset="$(jq -er '.[0].filename' "$pack_json")"
+          [[ "$asset" = /* ]] || asset="$RUNNER_TEMP/$asset"
+          if [[ ! -s "$asset" ]]; then
+            printf 'npm pack did not produce a non-empty tarball: %s\n' "$asset" >&2
+            exit 1
+          fi
+          printf 'asset=%s\n' "$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          ASSET: ${{ steps.package.outputs.asset }}
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.validate.outputs.prerelease }}
+          TAG: ${{ inputs.ref_name || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_args=(
+            release create "$TAG" "$ASSET"
+            --repo "$GITHUB_REPOSITORY"
+            --title "$TAG"
+            --generate-notes
+            --verify-tag
+          )
+          [[ "$PRERELEASE" == true ]] && release_args+=(--prerelease)
+          gh "${release_args[@]}"
