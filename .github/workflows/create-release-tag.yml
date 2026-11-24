@@ -1,0 +1,63 @@
+name: Create release tag
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Tag merged release
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/v') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out merge commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Validate release branch and package version
+        id: release
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          version_pattern='^release/v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.(0|[1-9][0-9]*))?$'
+          if [[ ! "$HEAD_REF" =~ $version_pattern ]]; then
+            printf 'Invalid release branch: %s\n' "$HEAD_REF" >&2
+            exit 1
+          fi
+
+          expected_version="${HEAD_REF#release/v}"
+          package_version="$(jq -er '.version' package.json)"
+          if [[ "$package_version" != "$expected_version" ]]; then
+            printf 'package.json version %s does not match release %s\n' \
+              "$package_version" "$expected_version" >&2
+            exit 1
+          fi
+
+          tag="v$expected_version"
+          if git ls-remote --exit-code --refs origin "refs/tags/$tag" >/dev/null 2>&1; then
+            printf 'Release tag already exists: %s\n' "$tag" >&2
+            exit 1
+          fi
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Push release tag
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag "$TAG" HEAD
+          git push origin "refs/tags/$TAG"
